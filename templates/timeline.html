@@ -1,0 +1,272 @@
+{% extends "layout.html"%}
+{% block content %}
+<!-- For Timeline -->
+<link title="timeline-styles" rel="stylesheet" 
+	href="https://cdn.knightlab.com/libs/timeline3/latest/css/timeline.css">
+<script src="https://cdn.knightlab.com/libs/timeline3/latest/js/timeline.js"></script>
+<!-- For Bootstrap Multiselect -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
+
+<script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+
+
+<div class="container form-inline">
+		<strong>Please Enter Collection or Agent Name: &nbsp; </strong>
+		<input id="agent" type="search" class="form-control rounded form-control-sm" placeholder="Search" aria-label="Search" aria-describedby="search-addon" />
+		&nbsp;
+
+		<strong>Department: &nbsp; </strong>
+		<select id="mySelect" name="mySelect" multiple="multiple">
+			<option value="African Art Collection, Yale University Art Gallery">African Art</option>
+			<option value="American Decorative Arts Collection, Yale University Art Gallery">American Decorative Arts</option>
+			<option value="American Paintings and Sculpture Collection, Yale University Art Gallery">American Paintings and Sculpture</option>
+			<option value="Ancient Art Collection, Yale University Art Gallery">Ancient Art</option>
+			<option value="Art of the Ancient Americas Collection, Yale University Art Gallery
+			">Art of the Ancient Americas</option>
+			<option value="Asian Art Collection, Yale University Art Gallery">Asian Art</option>
+			<option value="European Art Collection, Yale University Art Gallery">European Art</option>
+			<option value="Indo-Pacific Art Collection, Yale University Art Gallery">Indo-Pacific Art</option>
+			<option value="Modern and Contemporary Art Collection, Yale University Art Gallery">Modern and Contemporary Art</option>
+			<option value="Numismatics Collection, Yale University Art Gallery">Numismatics</option>
+			<option value="Photography Collection, Yale University Art Gallery
+			">Photography</option>
+			<option value="Prints and Drawings Collection, Yale University Art Gallery">Prints and Drawings</option>
+			<option value="Yale University Art Gallery">All</option>
+		</select>
+	<p>&nbsp; &nbsp;</p>
+	<select id="num-results" class="form-select selectpicker" aria-label="Number of results" >
+		<option selected>Displayed Number</option>
+		<option value="10">10</option>
+		<option value="20">20</option>
+		<option value="50">50</option>
+		<option value="100">100</option>
+	</select>
+
+	<button type="button" class="btn btn-outline-primary" id="sub">search</button>
+
+
+</div>
+
+<br>
+
+<div id='timeline-embed' style="width: 100%; height: 600px"></div>
+<div id="map"></div>
+
+<script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})
+	({key: "AIzaSyCovRRllWvArpwr1Lx-rRUNgRrXOUvMPLA", v: "weekly"});</script>
+
+<script type="text/javascript">
+	function waitForElm(selector) {
+		// Function taken from https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
+		return new Promise(resolve => {
+			if (document.querySelector(selector)) {
+				return resolve(document.querySelector(selector));
+			}
+
+			const observer = new MutationObserver(mutations => {
+				if (document.querySelector(selector)) {
+					resolve(document.querySelector(selector));
+					observer.disconnect();
+				}
+			});
+
+			observer.observe(document.body, {
+				childList: true,
+				subtree: true
+			});
+		});
+	}
+
+	let map;
+	let marker;
+	let counter = 0;
+	let coord = '{{  coord|safe|tojson  }}'.slice(1, -1);
+	let coord_json = JSON.parse(coord);
+	let slide_id = [];
+	let curr_id = 0;
+	let info;
+	let alert = "Sorry, no location associated with this object.";
+	let inital_load = false;
+
+	function handleResponse(response) {
+		let t = JSON.parse(response);
+		let response_json = t['json'];
+		console.log(response_json);
+		coord_json = t['coord'];
+		console.log(coord_json);
+		window.timeline = new TL.Timeline('timeline-embed', response_json);
+		waitForElm('.tl-slidenav-next').then(assign);
+	}
+
+	let request = null;
+			
+	function getResults(event) {
+		event.preventDefault();
+		let agent_or_label = document.getElementById('agent').value;
+		send_request('', '', '', '', agent_or_label);
+	}
+
+	function send_request(l, c, a, d, g) {
+                let label_val = encodeURIComponent(l);
+                let classifier_val = encodeURIComponent(c);
+                let agent_val = encodeURIComponent(a);
+                let agent_or_label = encodeURIComponent(g);
+
+				vals =$('#mySelect option:selected').map(function(a, item){return item.value;});
+				vals = vals.toArray();
+
+				let num_results = encodeURIComponent($('#num-results').val());
+				
+                let url = '/fetchdb?l=' + label_val + 
+                        '&c=' + classifier_val + 
+                        '&a=' + agent_val + 
+                        '&g=' + agent_or_label + 
+						'&n=' + num_results +
+						'&';
+						
+				vals.forEach(element => {
+					url = url + 'd=' + element + '&';
+				});
+				
+				if (url[url.length-1] == '&') {
+					url = url.substring(0, url.length-1);
+				}
+                if (request !== null)
+                request.abort();
+
+                request = $.ajax(
+                    {
+                        type: 'GET',
+                        url: url,
+                        success: handleResponse
+                    }
+                );
+            }
+
+
+	async function initMap() {
+	//@ts-ignore
+		const { Map } = await google.maps.importLibrary("maps");
+		
+		// console.log(coord_json);
+		map = new Map(document.getElementById("map"), {
+			center: { lat: parseInt(coord_json[curr_id][1]), lng: parseInt(coord_json[curr_id][0]) },
+			zoom: 3,
+		});
+
+		marker = new google.maps.Marker({
+			position: { lat: parseInt(coord_json[curr_id][1]), lng: parseInt(coord_json[curr_id][0]) },
+			map,
+			title: "Here",
+		});
+
+		info = new google.maps.InfoWindow({
+			content: alert,
+			ariaLabel: "Uh oh",
+		});
+
+		if ( parseInt(coord_json[curr_id][1]) == 0 &&  parseInt(coord_json[curr_id][0]) == 0) {
+			info.open({
+			anchor: marker,
+			map,
+			});
+		}
+
+		if (inital_load == false) {
+			inital_load = true;
+		}
+	}
+
+	function updateMap(){
+		// console.log(coord_json);
+		// console.log({ lat: parseInt(coord_json[curr_id][1]), lng: parseInt(coord_json[curr_id][0]) });
+		marker.setPosition({ lat: parseInt(coord_json[curr_id][1]), lng: parseInt(coord_json[curr_id][0]) });
+		map.panTo({ lat: parseInt(coord_json[curr_id][1]), lng: parseInt(coord_json[curr_id][0]) });
+		if ( parseInt(coord_json[curr_id][1]) == 0 &&  parseInt(coord_json[curr_id][0]) == 0) {
+			info.open({
+			anchor: marker,
+			map,
+			});
+		} else {
+			info.close();
+		}
+	}
+
+
+	function setup() {
+		waitForElm('.tl-slidenav-next').then(assign).then(initMap);
+		waitForElm('.tl-media-item tl-media-image tl-media-shadow').then(function () {
+			$('.tl-media-item tl-media-image tl-media-shadow').on('error', function () {
+			this.src= "https://upload.wikimedia.org/wikipedia/commons/d/d1/Image_not_available.png";
+		});
+		});
+		counter = 0;
+		let submit_button = document.getElementById('sub');
+		$('#sub').on('click', getResults);
+
+		var json_string = '{{ data|tojson }}'.slice(1, -1);
+		// console.log(json_string); 
+		var timeline_json = JSON.parse(json_string);
+		window.timeline = new TL.Timeline('timeline-embed', timeline_json);
+
+		$('#mySelect').multiselect({
+			enableFiltering: true,
+			includeSelectAllOption: true, 
+			enableCaseInsensitiveFiltering:true, 
+			enableClickableOptGroups: true
+		});
+
+		$('#mySelect').change(getResults);
+
+	}
+
+	function assign() {
+		counter = 0;
+		$('.tl-slidenav-previous').on('click', counter_decrease);
+		$('.tl-slidenav-next').on('click', counter_increase);
+		let children = $('.tl-slider-item-container').children('div').get();
+		slide_id = [];
+		children.forEach(element => {
+			slide_id.push($(element).attr('id'));
+		});
+		// console.log(slide_id);
+		curr_id = slide_id[0];
+		// console.log("here");
+		if (inital_load == true) {
+			updateMap();
+		}
+	}
+
+	function counter_decrease() {
+		counter = counter - 1;
+		curr_id = slide_id[counter];
+		updateMap();
+		// console.log(counter);
+	}
+
+	function counter_increase() {
+		counter = counter + 1;
+		curr_id = slide_id[counter];
+		updateMap();
+		// console.log(counter);
+	}
+
+	$('document').ready(setup);
+
+
+
+</script>
+{% endblock content %}
+
+

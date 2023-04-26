@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <!-- Required meta tags -->
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+   <!-- Bootstrap CSS -->
+	 <link rel="shortcut icon" href="#" />
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
+		<script src="static/js/jquery-3.5.1.js"></script>
+
+      <title>Discover Yale University Art Gallery</title>
+  </head>
+  <body>
+		<div class="img" id="main"></div>
+    <header class="site-header">
+      <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
+        <div class="container">
+          <a class="navbar-brand mr-4" href="/">Discover Yale University Art Gallery</a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarToggle">
+            <div class="navbar-nav mr-auto">
+              <a class="nav-item nav-link" href="{{  url_for('main') }}">Home</a>
+            </div>
+            <!-- Navbar Right Side -->
+            <!-- <div class="navbar-nav">
+							<a class="nav-item nav-link" id="sidebar_toggle">Toggle</a>
+            </div> -->
+          </div>
+        </div>
+      </nav>
+      </header>
+      <main role="main" class="container">
+        <div class="row">
+          <div class="col-md-12" id="main_text">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {%  endwith %}
+            {% block content %}{% endblock %}
+          </div>
+
+        </div>
+      </main>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+		<script>
+			$(document).ready(function() {
+				var isHidden = false;
+				$('#sidebar_toggle').click(function() {
+					if (isHidden == false) {
+						document.getElementById('sidebar_toggle').innerHTML = "Show";
+						document.getElementById('sidebar').style.display = "none";
+						document.getElementById("main_text").className = "col-md-12";
+						isHidden = true;
+					} else {
+						document.getElementById('sidebar_toggle').innerHTML = "Toggle";
+						document.getElementById('sidebar').style.display = "block";
+						document.getElementById("main_text").className = "col-md-8";
+						isHidden = false;
+					}
+				});
+
+
+				$(function() {
+    			$('#regButton').click(function() {
+						$.ajax({
+            	url: '/doRegistration',
+            	data: $('form').serialize(),
+            	type: 'POST',
+            	success: function(response) {
+                console.log(response);
+            	},
+            	error: function(error) {
+                console.log(error);
+            	}
+        		});
+    			});
+				});
+
+			});
+		</script>
+  </body>
+</html>
